@@ -1,30 +1,25 @@
 package store
-
 import (
 	"database/sql"
 	"goApi/internal/model"
 )
-
 type Store interface  {
-	getAllBooks()([]model.Book, error)
-	getBookByID(id int)(model.Book, error)
-	createBook(book model.Book)(model.Book, error)
-	updateBook(id int, book model.Book)(model.Book, error)
-	deleteBook(id int) (string, error)
+	GetAllBooks()([]model.Book, error)
+	GetBookByID(id int)(model.Book, error)
+	CreateBook(book model.Book)(model.Book, error)
+	UpdateBook(id int, book model.Book)(model.Book, error)
+	DeleteBook(id int) (string, error)
 }
-
 type store struct{
-	db sql.DB
+	db *sql.DB
 }
-
-func NewStore(db sql.DB) Store {
+func NewStore(db *sql.DB) Store {
 	return &store{
 		db: db,
 	}
 
 }
-
-func (s *store) getAllBooks()([]model.Book, error){
+func (s *store) GetAllBooks()([]model.Book, error){
 	q := `SELECT * FROM books`         //definimos la query
 	rows, err := s.db.Query(q)			//ejecutamos la query sobre la "store"
 	if err != nil {				
@@ -43,8 +38,7 @@ func (s *store) getAllBooks()([]model.Book, error){
 }
 return books, nil
 }
-
-func (s *store) getBookByID(id int)(model.Book, error){
+func (s *store) GetBookByID(id int)(model.Book, error){
 	q:= `SELECT * FROM books WHERE id = ?`
 	var b model.Book
 	err := s.db.QueryRow(q, id).Scan(&b.ID, &b.Title, &b.Author)
@@ -54,8 +48,7 @@ func (s *store) getBookByID(id int)(model.Book, error){
 	}
 	return b, nil
 }
-
-func (s *store) createBook(book model.Book)(model.Book, error){
+func (s *store) CreateBook(book model.Book)(model.Book, error){
 	q:= `INSERT INTO books (title, author) VALUES (?, ?)`
 	res, err := s.db.Exec(q, book.Title, book.Author)
 	if err != nil {
@@ -68,8 +61,7 @@ func (s *store) createBook(book model.Book)(model.Book, error){
 	book.ID = int(id)			
 	return book, nil
 }
-
-func (s *store) updateBook(id int, book model.Book)(model.Book, error){
+func (s *store) UpdateBook(id int, book model.Book)(model.Book, error){
 	q:= `UPDATE books SET title = ?, author = ? WHERE id = ?`
 	_, err := s.db.Exec(q, book.Title, book.Author, id)
 	if err != nil {
@@ -78,8 +70,7 @@ func (s *store) updateBook(id int, book model.Book)(model.Book, error){
 	book.ID = id
 	return book, nil
 }
-
-func (s *store) deleteBook(id int) (string, error){
+func (s *store) DeleteBook(id int) (string, error){
 q:= `DELETE FROM books WHERE id = ?`
 _, err := s.db.Exec(q, id)
 if err != nil {
