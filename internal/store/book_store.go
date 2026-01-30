@@ -8,7 +8,7 @@ type Store interface  {
 	GetBookByID(id int)(model.Book, error)
 	CreateBook(book model.Book)(model.Book, error)
 	UpdateBook(id int, book model.Book)(model.Book, error)
-	DeleteBook(id int) (string, error)
+	DeleteBook(id int) error
 }
 type store struct{
 	db *sql.DB
@@ -70,11 +70,11 @@ func (s *store) UpdateBook(id int, book model.Book)(model.Book, error){
 	book.ID = id
 	return book, nil
 }
-func (s *store) DeleteBook(id int) (string, error){
+func (s *store) DeleteBook(id int) error{
 q:= `DELETE FROM books WHERE id = ?`
 _, err := s.db.Exec(q, id)
 if err != nil {
-	return "Book not deleted because: ", err
+	return  err
 }
-return "Book deleted", nil
+return  nil
 }
