@@ -1,24 +1,28 @@
 package transport
 
 import (
-	"goApi/internal/service"
+	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
+
+	"goApi/internal/model"
+	"goApi/internal/service"
 )
 
 type BookHandler struct {
 	service *service.Service
 }
 
-func New(s *service.Service) *BookHandler{
+func New(s *service.Service) *BookHandler {
 	return &BookHandler{
 		service: s,
 	}
-} 
-
-func (h *BookHandler) HandleBooks(w http.ResponseWriter, r *http.Request){
+}
+func (h *BookHandler) HandleBooks(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		books, err:= h.service.GetAllBooks()
+		books, err := h.service.GetAllBooks()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -28,11 +32,11 @@ func (h *BookHandler) HandleBooks(w http.ResponseWriter, r *http.Request){
 
 	case http.MethodPost:
 		var book model.Book
-		if err:= json.NewDecoder(r.Body).Decode(&book); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		created, err:= h.service.CreateBook(book)
+		created, err := h.service.CreateBook(book)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -42,5 +46,43 @@ func (h *BookHandler) HandleBooks(w http.ResponseWriter, r *http.Request){
 		json.NewEncoder(w).Encode(created)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}		
+	}
+}
+func (h *BookHandler) HandleBookByID(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Not found", http.StatusBadRequest)
+	}
+	switch r.Method {
+	case http.MethodGet:
+		book, err := h.service.GetBookById(id)
+		if err != nil {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(book)
+	case http.MethodPut:
+		var book model.Book
+		if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+			http.Error(w, "Invalid input", http.StatusBadRequest)
+		}
+		updated, err := h.service.UpdateBook(id, book)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(updated)
+	case http.MethodDelete:
+		err := h.service.DeleteBook(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
